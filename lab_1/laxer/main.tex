@@ -1,0 +1,347 @@
+\documentclass[a4paper, 14pt]{extarticle}
+\usepackage[settings]{markdown}
+\usepackage{minted}
+
+% Поля
+%--------------------------------------
+\usepackage{geometry}
+\geometry{a4paper,tmargin=2cm,bmargin=2cm,lmargin=3cm,rmargin=1cm}
+%--------------------------------------
+
+
+%Russian-specific packages
+%--------------------------------------
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc} 
+\usepackage[english, main=russian]{babel}
+%--------------------------------------
+
+\usepackage{textcomp}
+
+% Красная строка
+%--------------------------------------
+\usepackage{indentfirst}               
+%--------------------------------------             
+
+
+%Graphics
+%--------------------------------------
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+\usepackage{wrapfig}
+%--------------------------------------
+
+% Полуторный интервал
+%--------------------------------------
+\linespread{1.3}                    
+%--------------------------------------
+
+%Выравнивание и переносы
+%--------------------------------------
+% Избавляемся от переполнений
+\sloppy
+% Запрещаем разрыв страницы после первой строки абзаца
+\clubpenalty=10000
+% Запрещаем разрыв страницы после последней строки абзаца
+\widowpenalty=10000
+%--------------------------------------
+
+%Списки
+\usepackage{enumitem}
+
+%Подписи
+\usepackage{caption} 
+
+%Гиперссылки
+\usepackage{hyperref}
+
+\hypersetup {
+	unicode=true
+}
+
+%Рисунки
+%--------------------------------------
+\DeclareCaptionLabelSeparator*{emdash}{~--- }
+\captionsetup[figure]{labelsep=emdash,font=onehalfspacing,position=bottom}
+%--------------------------------------
+
+\usepackage{tempora}
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage{listings}
+\lstset{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  frame=L,
+  xleftmargin=\parindent,
+  language=Python,
+  showstringspaces=false,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\bfseries\color{blue},
+  commentstyle=\itshape\color{purple},
+  identifierstyle=\color{black},
+  stringstyle=\color{red},
+}
+
+%--------------------------------------
+%			НАЧАЛО ДОКУМЕНТА
+%--------------------------------------
+
+\begin{document}
+
+%--------------------------------------
+%			ТИТУЛЬНЫЙ ЛИСТ
+%--------------------------------------
+\begin{titlepage}
+\thispagestyle{empty}
+\newpage
+
+
+%Шапка титульного листа
+%--------------------------------------
+\vspace*{-60pt}
+\hspace{-65pt}
+\begin{minipage}{0.3\textwidth}
+\hspace*{-20pt}\centering
+\includegraphics[width=\textwidth]{emblem}
+\end{minipage}
+\begin{minipage}{0.67\textwidth}\small \textbf{
+\vspace*{-0.7ex}
+\hspace*{-6pt}\centerline{Министерство науки и высшего образования Российской Федерации}
+\vspace*{-0.7ex}
+\centerline{Федеральное государственное бюджетное образовательное учреждение }
+\vspace*{-0.7ex}
+\centerline{высшего образования}
+\vspace*{-0.7ex}
+\centerline{<<Московский государственный технический университет}
+\vspace*{-0.7ex}
+\centerline{имени Н.Э. Баумана}
+\vspace*{-0.7ex}
+\centerline{(национальный исследовательский университет)>>}
+\vspace*{-0.7ex}
+\centerline{(МГТУ им. Н.Э. Баумана)}}
+\end{minipage}
+%--------------------------------------
+
+%Полосы
+%--------------------------------------
+\vspace{-25pt}
+\hspace{-35pt}\rule{\textwidth}{2.3pt}
+
+\vspace*{-20.3pt}
+\hspace{-35pt}\rule{\textwidth}{0.4pt}
+%--------------------------------------
+
+\vspace{1.5ex}
+\hspace{-35pt} \noindent \small ФАКУЛЬТЕТ\hspace{50pt} <<Информатика и системы управления>>
+
+\vspace*{-16pt}
+\hspace{47pt}\rule{0.83\textwidth}{0.4pt}
+
+\vspace{0.5ex}
+\hspace{-35pt} \noindent \small КАФЕДРА\hspace{50pt} <<Теоретическая информатика и компьютерные технологии>>
+
+\vspace*{-16pt}
+\hspace{30pt}\rule{0.866\textwidth}{0.4pt}
+  
+\vspace{11em}
+
+\begin{center}
+\Large {\bf Лабораторная работа № 1} \\ 
+\large {\bf по курсу <<Распределение параллельных и распределённых программ>>}\\
+\large <<Pаспараллеливание алгоритма вычисления произведения двух матриц>>
+\end{center}\normalsize
+
+\vspace{8em}
+
+
+\begin{flushright}
+  {Студент группы ИУ9-51Б Горбунов А. Д.\hspace*{15pt} \\
+  \vspace{2ex}
+  Преподаватель Царёв А. С.\hspace*{15pt}}
+\end{flushright}
+
+\bigskip
+
+\vfill
+ 
+
+\begin{center}
+\textsl{Москва 2024}
+\end{center}
+\end{titlepage}
+%--------------------------------------
+%		КОНЕЦ ТИТУЛЬНОГО ЛИСТА
+%--------------------------------------
+
+\renewcommand{\ttdefault}{pcr}
+
+\setlength{\tabcolsep}{3pt}
+\newpage
+\setcounter{page}{2}
+
+\section{Задача}\label{Sect::task}
+\par
+    Замерить время вычисления, сравнить с временем при вычислении элементов матрицы С не по строкам, а по столбцам. Размер матриц подобрать таким образом, чтобы время выполнения на вашей машине было не слишком непоказательно малым (меньше нескольких минут), но и не чересчур большим (несколько часов). Использовать библиотечные функции для вычисления произведений матриц нельзя.
+
+ 
+    Затем конечную матрицу С условно разделить на примерно равные прямоугольные подматрицы и распараллелить программу таким образом, чтобы каждый поток занимался вычислением своей подматрицы. Матрицы А и В для этого разделить на примерно равные группы строк и столбцов соответственно. Сделать для разного количества потоков (разных разбиений), также замерить время вычисления, сравнить с вычислениями стандартным алгоритмом. Также по окончании вычислений сравнивать получившуюся матрицу с той, что была вычислена стандартным алгоритмом, для проверки правильности вычислений.
+
+\section{Характеристики устройства}\label{Sect::task}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{picture_st.png}
+    \label{fig:enter-label}
+\end{figure}
+
+\pagebreak
+\section{Код решения}
+\begin{minted}{python}
+    Файл main.py
+import random
+import numpy as np
+import threading, time
+n_1 = 501  # Размерность матрицы
+m_1 = 520
+matrix_1 = np.array(
+[[random.randint(-1000, 1000) for _ in range(m_1)] for _ in range(n_1)])
+
+n_2 = 520  # Размерность матрицы
+m_2 = 515
+matrix_2 = np.array(
+[[random.randint(-1000, 1000) for _ in range(m_2)] for _ in range(n_2)])
+
+print("ожидаемый результат:")
+print(np.matmul(matrix_1, matrix_2))
+
+def multiplicationOfCube(n, final_matrix):
+    for i in range(n):
+        for j in range(m_2):
+            c = 0
+            for k in range(len(matrix_1[i])):
+                c += matrix_1[i][k] * matrix_2[j][k]
+            final_matrix[i, j] = c
+    
+def multiplicationOfCubeThreading(n, h, b, final_matrix):
+    n_min = 0
+    if h > 0:
+        if h == 1:
+            n_min = n-1
+        else:
+            n_min = b*(h-1)*n
+        n = b*h*n
+    if n == 0:
+        n = n_1
+
+    for i in range(n_min, n):
+        if i >= len(matrix_1):
+            break
+        for j in range(m_2):
+            c = 0
+            for k in range(len(matrix_2[j])):
+                c += matrix_1[i][k] * matrix_2[j][k]
+            final_matrix[i, j] = c
+
+
+def NThreadings(b):
+    final_matrix = np.array(
+    [[random.randint(-1000, 1000) for _ in range(m_2)] for _ in range(n_1)])
+    #print(final_matrix)
+
+    for h in range(b):
+        if n_1 %2 !=0:
+            thread = threading.Thread(name='worker', 
+                                target=multiplicationOfCubeThreading, 
+                                args=(n_1//b +1, h, b, final_matrix,))
+        else:
+            thread = threading.Thread(name='worker', 
+                                target=multiplicationOfCubeThreading, 
+                                args=(n_1//b, h, b, final_matrix,))
+        thread.start()
+    
+    t_start = time.time()
+    while any(th.is_alive() 
+              for th in threading.enumerate() 
+              if th.name == 'worker'):
+        continue
+    
+    tm = round(time.time() - t_start, 2)
+    print(f'{b} thread время: {tm}')
+    print(final_matrix)
+
+
+if __name__ == '__main__':
+    print("1-я матрица:")
+    print(matrix_1)
+    print("2-я матрица:")
+    print(matrix_2)
+    matrix_2 = matrix_2.T
+
+    final_matrix = np.array(
+    [[random.randint(-1000, 1000) for _ in range(m_2)] for _ in range(n_1)])
+
+    print("заготовка финальной матрицы:")
+    print(final_matrix)
+
+    t_start = time.time()
+
+    multiplicationOfCube(n_1, final_matrix)
+
+    tm = round(time.time() - t_start, 2)
+
+    print(f'1 thread время: {tm}')
+    print(final_matrix)
+    
+    NThreadings(1)
+    NThreadings(2)
+    NThreadings(4)
+    NThreadings(6)
+    NThreadings(8)
+    NThreadings(10)
+\end{minted}
+
+\section{Времена работы программы}
+
+\begin{tabular}
+{|p{10cm}|p{5cm}|}
+\hline
+Потоки & Время \\
+\hline
+1(без использования потоков) & 76.43 с \\
+\hline
+1(с использованием потоков) & 380.94 с \\
+\hline
+2 & 295.35 с \\
+\hline
+4 & 251.84 с \\
+\hline
+6 & 285.46 с \\
+\hline
+8 & 341.22 с \\
+\hline
+10 & 370.03 с \\
+\hline
+\end{tabular}
+
+
+\section{Заключение}
+
+    В данной работе я изучил возможности языка python в работе с библиотекой threading, а именно научился распределять вычисления на потоки.
+
+\section{Результат запуска}
+    
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.8\textwidth]{picture_1.png}
+\label{fig:picture_1.png}
+\end{figure}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.8\textwidth]{picture_2.png}
+\label{fig:picture_2.png}
+\end{figure}
+
+\end{document}
+
