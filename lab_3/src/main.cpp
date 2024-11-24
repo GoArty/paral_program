@@ -7,7 +7,7 @@
 using namespace std;
 
 const double E = 0.00001;
-const int N = 1000;
+const int N = 1019;
 
 void multMatrixes(double x[N], double y[N], double A[N][N]) {
     #pragma omp parallel for
@@ -84,7 +84,7 @@ void mainProg() {
     int f = 1;
     double A[N][N];
 
-    #pragma omp parallel for(10)
+    #pragma omp parallel for
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             if (i == j) {
@@ -124,20 +124,34 @@ void mainProg() {
 
     } while (f != 0);
 
-    printMatrix(x_n);
+    //printMatrix(x_n);
 }
 
-int main() {
-     printf("Hello from thread %d out of %d threads\n", omp_get_thread_num(), omp_get_num_threads());
+void prog(int n){
+    omp_set_num_threads(n);
     auto start_time = std::chrono::steady_clock::now(); 
 
-    //mainProg();
+    mainProg();
     
     auto current_time = std::chrono::steady_clock::now();
     auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count();
-    printf("Время: ");
+    printf("Потоки: %d\tВремя: ",n);
     cout << elapsed_time / 1000.0 << endl;
+}
 
+int main() {
+    omp_set_dynamic(0);
+
+    prog(1);
+    prog(2);
+    prog(3);
+    prog(4);
+    prog(5);
+    prog(6);
+    prog(7);
+    prog(8);
+    prog(9);
+    prog(10);
 
     return 0;
 }
