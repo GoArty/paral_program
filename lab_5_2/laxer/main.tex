@@ -147,9 +147,9 @@
 \vspace{11em}
 
 \begin{center}
-\Large {\bf Лабораторная работа № 3} \\ 
+\Large {\bf Лабораторная работа № 5\_2} \\ 
 \large {\bf по курсу <<Распределение параллельных и распределённых программ>>}\\
-\large <<Параллельная реализация решения системы линейных алгебраических уравнений с помощью OpenMP>>
+\large <<Синхронизация потоков>>
 \end{center}\normalsize
 
 \vspace{8em}
@@ -180,199 +180,86 @@
 \newpage
 \setcounter{page}{2}
 
-\section{Задача}\label{Sect::task}
-\par
-    Переделать предыдущую лабораторную работу используя OpenMP вместо MPI. 
-
-
-\section{Код решения}
+\section{Код программы}
 \begin{minted}{c++}
                                         Файл main.cpp:
-#include <omp.h>
 #include <iostream>
-#include <math.h>
-#include <chrono>
 #include <thread>
+#include <vector>
+#include <shared_mutex>
+#include <mutex>
+#include <unordered_set>
+#include <random>
+#include <list>
 
 using namespace std;
 
-const double E = 0.00001;
-const int N = 50000;
+shared_mutex list_mutex;
+list<int> shared_list;
+unordered_set<int> unique_numbers;
 
-void multMatrixes(double x[N], double y[N], short** A) {
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++)
-        for (int j = 0; j < N; j++)
-            y[i] += A[i][j] * x[j];  
-}
+void generate_and_insert(int num_threads, int num_numbers) {
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(0, 1000);
 
-void subMatrixes(double x[N], double y[N], double z[N]) {
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++)
-        z[i] = x[i] - y[i];
-}
+    for (int i = 0; i < num_numbers; i++) {
+        int number = dis(gen);
 
-double scalMatrixes(double u[N], double v[N]) {
-    double result = 0;
-    #pragma omp parallel for reduction(+:result)
-    for (int i = 0; i < N; i++)
-        result += u[i] * v[i];
-    return result;
-}
+        shared_lock<std::shared_mutex> read_lock(list_mutex);
+        if (unique_numbers.find(number) == unique_numbers.end()) {
+            read_lock.unlock();
 
-double powMatrix(double u[N]) {
-    double sum = 0;
-    #pragma omp parallel for reduction(+:sum)
-    for (int i = 0; i < N; i++)
-        sum += u[i] * u[i];
-    return sqrt(sum);
-}
-
-void printMatrix(double x[N]) {
-    printf("\n");
-    for (int i = 0; i < N; i++)
-        printf("%i\t%f\n", i + 1, x[i]);
-    printf("\n");
-}
-
-void fillMatrix(double x[N], double a) {
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++)
-        x[i] = a;
-}
-
-int kritEnd_bool(double x_n[N], double b[N], short** A) {
-    double Ax_n[N];
-    fillMatrix(Ax_n, 0);
-
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++)
-        for (int j = 0; j < N; j++)
-            Ax_n[i] += A[i][j] * x_n[j];
-
-    double z[N];
-    fillMatrix(z, 0);
-
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++)
-        z[i] = Ax_n[i] - b[i];
-
-    double norm_z = powMatrix(z);
-    double norm_b = powMatrix(b);
-
-    double k = norm_z / norm_b;
-
-    if (k <= E)
-        return 0;
-    else
-        return 1;
-}
-
-void mainProg() {
-    double x_n[N];
-    double b[N];
-    int f = 1;
-
-    short** A = new short*[N];
-    for (int i = 0; i < N; i++)
-        A[i] = new short[N];
-
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
-            if (i == j) {
-                A[i][j] = 2;
-            } else {
-                A[i][j] = 1;
+            unique_lock<std::shared_mutex> write_lock(list_mutex);
+            if (unique_numbers.find(number) == unique_numbers.end()) {
+                shared_list.push_back(number);
+                unique_numbers.insert(number);
             }
         }
+        
     }
-
-    fillMatrix(x_n, 0);
-    fillMatrix(b, N + 1);
-
-    do {
-        double Ax_n[N];
-        fillMatrix(Ax_n, 0);
-        multMatrixes(x_n, Ax_n, A);
-
-        double y_n[N];
-        fillMatrix(y_n, 0);
-        subMatrixes(Ax_n, b, y_n);
-
-        double Ay_n[N];
-        fillMatrix(Ay_n, 0);
-        multMatrixes(y_n, Ay_n, A);
-
-        double r_n = scalMatrixes(y_n, Ay_n) / scalMatrixes(Ay_n, Ay_n);
-
-        #pragma omp parallel for
-        for (int i = 0; i < N; i++) {
-            y_n[i] = r_n * y_n[i];
-        }
-
-        subMatrixes(x_n, y_n, x_n);
-
-        f = kritEnd_bool(x_n, b, A);
-
-    } while (f != 0);
-
-    for (int i = 0; i < N; i++)
-        delete[] A[i];
-    delete[] A;
 }
 
-void prog(int n) {
-    omp_set_num_threads(n);
-    auto start_time = std::chrono::steady_clock::now();
+bool check_for_duplicates() {
+    shared_lock<shared_mutex> read_lock(list_mutex);
+    unordered_set<int> temp_set;
+    for (const auto& number : shared_list) {
+        if (temp_set.find(number) != temp_set.end()) 
+            return false;
+        temp_set.insert(number);
+    }
+    return true;
+}
 
-    mainProg();
-
-    auto current_time = std::chrono::steady_clock::now();
-    auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>
-    (current_time - start_time).count();
-    printf("Потоки: %d\tВремя: ", n);
-    cout << elapsed_time / 1000.0 << endl;
+void print_list() {
+    shared_lock<shared_mutex> read_lock(list_mutex);
+    cout << "List contents: ";
+    for (const auto& number : shared_list) 
+        cout << number << " ";
+    cout << std::endl;
 }
 
 int main() {
-    omp_set_dynamic(0);
+    int num_threads = 4;
+    int num_numbers_per_thread = 10000;
 
-    prog(1);
-    prog(2);
-    prog(3);
-    prog(4);
-    prog(5);
-    prog(6);
-    prog(7);
-    prog(8);
-    prog(9);
-    prog(10);
+    vector<thread> threads;
+    for (int i = 0; i < num_threads; i++) 
+        threads.emplace_back(generate_and_insert, num_threads, num_numbers_per_thread);
+
+    for (auto& thread : threads) 
+        thread.join();
+    
+    print_list();
+
+    if (check_for_duplicates()) 
+        cout << "No duplicates found in the list." << endl;
+    else 
+        cout << "Duplicates found in the list." << endl;
 
     return 0;
 }
-
 \end{minted}
-
-\section{График зависимости времени выполнения от числа потоков для N = 50000}\label{Sect::task}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\linewidth]{graph.png}
-    \label{fig:enter-label}
-\end{figure}
-
-\section{Заключение}
-
-    В данной работе я изучил возможности языка C++ в работе с библиотекой OpenMP. Также на основе графика можно сделать вывод, что OpenMP лучше оптимизирует по сравнению с MPI. Кроме того OpenMP легче в использовании.
-
-\section{Результат запуска}
-    
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.8\textwidth]{picture.png}
-\label{fig:picture.png}
-\end{figure}
 
 \end{document}
 
